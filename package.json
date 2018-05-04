@@ -29,7 +29,8 @@
     "rollup-plugin-node-resolve": "^3.3.0"
   },
   "scripts": {
-    "start": "nps"
+    "start": "nps",
+    "precommit": "yarn lint-staged"
   },
   "lint-staged": {
     "*.js": ["yarn start prettier", "git add"]
