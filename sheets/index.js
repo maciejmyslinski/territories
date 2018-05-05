@@ -1,5 +1,6 @@
 import isEven from 'is-even';
 import moment from 'moment';
+import Mustache from 'mustache';
 import { generateMessages } from './utils/generateMessages';
 
 function getSheetsWithData() {
@@ -65,14 +66,40 @@ function calculateDaysSinceAssigned(territory) {
   return moment().diff(moment(startDate), 'days');
 }
 
+function getMessageTemplates() {
+  function filterOutEmptyRows(row) {
+    return row[0];
+  }
+  const sheet = SpreadsheetApp.getActive().getSheetByName('Wiadomości');
+  const row = 2;
+  const column = 1;
+  const rowsNo = sheet.getDataRange().getLastRow();
+  const columnsNo = 3;
+  const allTemplates = sheet
+    .getRange(row, column, rowsNo, columnsNo)
+    .getValues()
+    .filter(filterOutEmptyRows)
+    .map(templateRow => ({
+      days: templateRow[0],
+      brothers: templateRow[1],
+      sisters: templateRow[2]
+    }));
+  return allTemplates;
+}
+
 function doGet() {
   return ContentService.createTextOutput(
     JSON.stringify(generateMessages())
   ).setMimeType(ContentService.MimeType.JSON);
 }
 function test() {
-  const territories = getTerritories(getSheetsWithData())
-    .map(territory => parseTerritory(territory))
-    .filter(filterOutReturned);
-  Logger.log(calculateDaysSinceAssigned(territories[0]));
+  // const territories = getTerritories(getSheetsWithData())
+  //   .map(territory => parseTerritory(territory))
+  //   .filter(filterOutReturned);
+  Logger.log(
+    Mustache.render(
+      'Drogi bracie!\nInformuję, że za miesiąc kończy się czas opracowania przez Ciebie terenu numer {{numer_terenu}}. Jeśli już go opracowałeś, bardzo proszę o zdanie go.\nEugeniusz',
+      { numer_terenu: 2 }
+    )
+  );
 }

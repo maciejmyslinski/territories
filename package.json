@@ -61,6 +61,7 @@
     "babel-runtime": "^6.26.0",
     "imessagemodule": "^0.1.7",
     "is-even": "^1.0.0",
-    "moment": "^2.22.1"
+    "moment": "^2.22.1",
+    "mustache": "^2.3.0"
   }
 }
