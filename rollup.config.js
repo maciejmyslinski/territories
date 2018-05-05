@@ -15,12 +15,15 @@ export default {
     babel({
       babelrc: false,
       exclude: 'node_modules/**',
+      runtimeHelpers: true,
+      plugins: [
+        '@babel/plugin-transform-runtime',
+        '@babel/plugin-external-helpers',
+      ],
       presets: [
         [
-          'env',
-          {
-            modules: false,
-          },
+          '@babel/preset-env',
+          { modules: false, targets: { browsers: ['ie >= 6'] } },
         ],
       ],
     }),
