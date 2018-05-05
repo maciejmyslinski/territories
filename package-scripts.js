@@ -7,7 +7,11 @@ module.exports = {
   scripts: {
     build: {
       description: 'delete the build directory and run all builds',
-      default: series(rimraf('build'), concurrent.nps('build.sheets')),
+      default: series(
+        rimraf('build'),
+        concurrent.nps('build.sheets'),
+        'pbcopy < build/index.js',
+      ),
       sheets: {
         description: 'build sheets',
         script: 'rollup --config',
@@ -17,6 +21,7 @@ module.exports = {
       script: 'babel-node mac/index.js',
     },
     prettier: {
+      description: 'run prettier on files',
       script: 'prettier-eslint "**/*.js" --write --list-different',
     },
   },
