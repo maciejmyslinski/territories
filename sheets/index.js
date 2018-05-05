@@ -1,11 +1,12 @@
 import isEven from 'is-even';
+import moment from 'moment';
 import { generateMessages } from './utils/generateMessages';
 
 function getSheetsWithData() {
   return SpreadsheetApp.getActive()
     .getSheets()
     .filter(
-      sheet => sheet.getName() !== 'Wiadomości' && sheet.getName() !== 'Dane',
+      sheet => sheet.getName() !== 'Wiadomości' && sheet.getName() !== 'Dane'
     );
 }
 
@@ -20,7 +21,7 @@ function getTerritories(sheets) {
         const numRows = 54 - row;
         const numColumns = 2;
         return sheet.getRange(row, column, numRows, numColumns).getValues();
-      },
+      }
     );
     return [...acc, ...territories];
   }, []);
@@ -38,8 +39,8 @@ function parseTerritory(territory) {
         {
           name: row[0],
           startDate: array[index + 1][0],
-          endDate: array[index + 1][1],
-        },
+          endDate: array[index + 1][1]
+        }
       ];
     }
     return acc;
@@ -51,17 +52,27 @@ function parseTerritory(territory) {
   return {
     number,
     name,
-    assignment: lastAssignment,
+    assignment: lastAssignment
   };
+}
+
+function filterOutReturned(territory) {
+  return !territory.assignment.endDate;
+}
+
+function calculateDaysSinceAssigned(territory) {
+  const startDate = new Date(territory.assignment.startDate);
+  return moment().diff(moment(startDate), 'days');
 }
 
 function doGet() {
   return ContentService.createTextOutput(
-    JSON.stringify(generateMessages()),
+    JSON.stringify(generateMessages())
   ).setMimeType(ContentService.MimeType.JSON);
 }
 function test() {
-  Logger.log(
-    JSON.stringify(parseTerritory(getTerritories(getSheetsWithData())[0])),
-  );
+  const territories = getTerritories(getSheetsWithData())
+    .map(territory => parseTerritory(territory))
+    .filter(filterOutReturned);
+  Logger.log(calculateDaysSinceAssigned(territories[0]));
 }
