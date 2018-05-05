@@ -66,10 +66,11 @@ function calculateDaysSinceAssigned(territory) {
   return moment().diff(moment(startDate), 'days');
 }
 
+function filterOutEmptyRows(row) {
+  return row[0];
+}
+
 function getMessageTemplates() {
-  function filterOutEmptyRows(row) {
-    return row[0];
-  }
   const sheet = SpreadsheetApp.getActive().getSheetByName('Wiadomości');
   const row = 2;
   const column = 1;
@@ -87,19 +88,71 @@ function getMessageTemplates() {
   return allTemplates;
 }
 
+function getPeopleData() {
+  function filterOutGroups(row) {
+    const startsWith = 'Grupa';
+    return row[0].substr(0, startsWith.length) !== startsWith;
+  }
+
+  const sheet = SpreadsheetApp.getActive().getSheetByName('Dane');
+  const row = 2;
+  const column = 1;
+  const rowsNo = sheet.getDataRange().getLastRow();
+  const columnsNo = 3;
+  const allPeople = sheet
+    .getRange(row, column, rowsNo, columnsNo)
+    .getValues()
+    .filter(filterOutEmptyRows)
+    .filter(filterOutGroups)
+    .map(person => ({
+      name: person[0],
+      sex: person[1] === 'kobieta' ? 'female' : 'male',
+      phoneNumber: person[2]
+    }));
+  return allPeople;
+}
+
+function getOngoingTerritories() {
+  return getTerritories(getSheetsWithData())
+    .map(territory => parseTerritory(territory))
+    .filter(filterOutReturned);
+}
+
+function generateTextMessages() {
+  const peopleData = getPeopleData();
+  const messageTemplates = getMessageTemplates();
+  const messagableDays = messageTemplates.map(template => template.days);
+  return getOngoingTerritories()
+    .map(territory => ({
+      ...territory,
+      daysSinceAssigned: calculateDaysSinceAssigned(territory)
+    }))
+    .filter(
+      territory => messagableDays.indexOf(territory.daysSinceAssigned) > -1
+    )
+    .map(territory => ({
+      ...territory,
+      person: peopleData.filter(
+        person => person.name === territory.assignment.name
+      )[0]
+    }))
+    .map(territory => {
+      const template = messageTemplates.filter(
+        messageTemplate => messageTemplate.days === territory.daysSinceAssigned
+      )[0][territory.person.sex === 'male' ? 'brothers' : 'sisters'];
+      return {
+        content: Mustache.render(template, { numer_terenu: territory.number }),
+        number: territory.person.phoneNumber
+      };
+    });
+}
+
 function doGet() {
   return ContentService.createTextOutput(
-    JSON.stringify(generateMessages())
+    JSON.stringify(generateTextMessages())
   ).setMimeType(ContentService.MimeType.JSON);
 }
+
 function test() {
-  // const territories = getTerritories(getSheetsWithData())
-  //   .map(territory => parseTerritory(territory))
-  //   .filter(filterOutReturned);
-  Logger.log(
-    Mustache.render(
-      'Drogi bracie!\nInformuję, że za miesiąc kończy się czas opracowania przez Ciebie terenu numer {{numer_terenu}}. Jeśli już go opracowałeś, bardzo proszę o zdanie go.\nEugeniusz',
-      { numer_terenu: 2 }
-    )
-  );
+  Logger.log(JSON.stringify(generateTextMessages()));
 }
